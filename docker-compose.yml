@@ -1,35 +1,44 @@
-version: '3.8'
-services: 
-    main:
-        build: 
-            context: .
-            dockerfile: Dockerfile
-        command: 'php artisan serve --host=0.0.0.0'
-        volumes:
-            - .:/app
-        ports:
-            - 8000:8000
-        depends_on: 
-            - db
+version: "3.8"
 
-    queue:
-        build: 
-            context: .
-            dockerfile: Dockerfile
-        command: 'php artisan queue:work'
-        depends_on: 
-            - db        
+networks:
+  laravel:
 
-    db:
-        platform: linux/x86_64
-        image: mysql:8.0
-        environment: 
-            MYSQL_DATABASE: main
-            MYSQL_USER: admin
-            MYSQL_ROOT: admin
-            MYSQL_PASSWORD: admin
-            MYSQL_ROOT_PASSWORD: root
-        volumes:
-            - ./storage/dbdata:/var/lib/mysql
-        ports:
-            - 3366:3306
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+      - "9000:9000"
+    volumes:
+      - .:/var/www/html
+    command: php artisan serve --host 0.0.0.0
+    networks:
+      - laravel
+
+  mysql:
+    image: mysql:5.7.22
+    ports:
+      - "3309:3306"
+    volumes:
+      - ./docker/mysql:/var/lib/mysql
+    networks:
+      - laravel
+    environment:
+      MYSQL_DATABASE: main
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: admin
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+
+  nginx:
+    image: nginx:1.19.0-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - laravel
